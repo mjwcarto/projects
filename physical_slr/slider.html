@@ -35,7 +35,10 @@
 <body>
 
 <div id="map" style='width:100%; max-height:100%; height:700px;'></div>
-<div>Sea Level Rise (m): <input id='add-slr' type='range' min=0 max=6 step=1 style='width: 20em'/></div>
+<div>Sea Level Rise: <input id='add-slr' type='range' min=0 max=6 step=1 style='width: 20em'/>
++<span id="output"></span> m
+</div>
+
 
 <script type="text/javascript">
 // This script to differentiate the various RGB values from the original Mapbox Terrain-RGB
@@ -86,12 +89,11 @@ var antitoner = L.tileLayer.gl({
   opacity: 0.5,
   tileUrls: ['https://{s}.tiles.mapbox.com/v4/mapbox.terrain-rgb/{z}/{x}/{y}.pngraw?access_token=' + mapboxAccessToken]
 }).addTo(map);
-
 // LIQUEFACTION CODE //
 // GLOBAL VARIABLES TO BE USED:
 var slrValue; //Slider value
-
 //Styleing rules for the soils layers
+
 function soilStyle(feature) {
   return {
     fillColor: colorLSN(lSN),
@@ -100,45 +102,7 @@ function soilStyle(feature) {
     fillOpacity: 0.7
   };
 }
-
-//	 load the GeoJSON data from the web
- var soildata = $.getJSON ("https://mychellew.github.io/mychellew-web/soils.geojson",
-  function (data){
-    // Store the data for later
-    L.geoJson(data, {
-     style: soilStyle
-    }).addTo(map)
-  });
-
-console.log(soildata)
-// Determine the factors used to calculate lSN: depth that can be liquefied
-// Depth is in meters
-var depth =
-function onEachFeature(soildata, feature) {
-  soildata.responseJSON.feature.polygon.properties.depth + slrValue
-};
-
-console.log(depth)
-
-// Determine the factors used to calculate lSN: liquefaction susceptibility
-// Note that Ev is divided by 1000 as the data could not store decimals when exported from ArcMap
-// The ev value should be in a fraction and represents the liquefaction susceptibility Number
-var constantLSN =
-function onEachFeature(soildata, feature) {
- soildata.responseJSON.feature.polygon.properties.liequeev / 1000
-};
-
-console.log(constantLSN)
-
-// Caluclate the LSN Value using the following equations and the following parameters
- var lSN =
- function onEachFunction(feature, layer) {
-   Math.log(depth) * constantLSN * 1000
-  };
-
-  console.log(lSN)
 // Classify the data based on their LSN value
-
  function colorLSN(lSN) {
    return   lSN > 50 ? '#800026' :  // Severe Damage
             lSN > 40 ? '#BD0026' :  // Medium Damage
@@ -146,30 +110,35 @@ console.log(constantLSN)
             lSN > 20 ? '#FC4E2A' :  // Light to Moderate
             lSN < 10 ? '#FFEDA0' :  // This is the class that will experience no or little land damage
                        '#FFFFFF';   // No associated LSN value, produce this color
-                     };
-//Create Toggable layers
-// Layer 1: Looking at Sea Level Rise Scenarios
-// var onlySLR = L.layerGroup([antitoner]);
-//Layer 2: Looking at Liquefaction Severity Number and Sea Level Rise
-// var liquefaction = L.layerGroup()
-
-// Add these layers into the Map
-// L.control.layers(onlySLR, liquefaction).addTo(map);
-//Sylization of the Toggle Menu
-// var toggleLayers = {
-// 	"<span style=' color: gray'>Sea Level Rise Scenarios</span>": onlySLR,
-// 	"Liquefaction Severity Number": liquefaction
-// };
-
-//Slider code was also modiefied from Iván Sánchez Ortega's sliders demo code:
-// Repo is available from here: https://gitlab.com/IvanSanchez/Leaflet.TileLayer.GL/blob/master/demo/demo-sliders.html
-L.DomEvent.on(document.getElementById('add-slr'), 'change input', function(ev) {
-  antitoner.setUniform('slrValue', ev.target.value);
-  antitoner.reRender();
-});
+  };
+//	 load the GeoJSON data from the web
+var soildata =
+$.getJSON ("https://mychellew.github.io/mychellew-web/soils.geojson",
+  function (data){
+    soilGeoJSONdata = data;
+    // Store the data for later
+    L.geoJson(data, {
+     style: soilStyle
+    }).addTo(map)
+  }
+);
+console.log(soildata)
+// Determine the factors used to calculate lSN: depth that can be liquefied
+// Depth is in meters
+// var depth = feature.properties.depth + slrValue;
+// console.log(depth)
+// Determine the factors used to calculate lSN: liquefaction susceptibility
+// Note that Ev is divided by 1000 as the data could not store decimals when exported from ArcMap
+// The ev value should be in a fraction and represents the liquefaction susceptibility Number
+// var constantLSN = feature.properties.liqueev / 1000
+// console.log(constantLSN)
+// Caluclate the LSN Value using the following equations and the following parameters
+ function lSN (soildata, feature) {
+   Math.log(feature.properties.depth) * feature.properties.liqueev/1000 * 1000
+  };
+  console.log(lSN)
 // Code for Legend
 // var legend = L.control({position:'bottomright'}),
-
 // addLegend = function (map) {
 // 	var div = L.DomUtil.create('div', 'Liquefaction Severity Index'),
 // 		grades = [10, 20, 30, 40, 50],
@@ -184,6 +153,24 @@ L.DomEvent.on(document.getElementById('add-slr'), 'change input', function(ev) {
 // };
 //
 // legend.addTo(map);
+//Create Toggable layers
+// Layer 1: Looking at Sea Level Rise Scenarios
+// var onlySLR = L.layerGroup([antitoner]);
+//Layer 2: Looking at Liquefaction Severity Number and Sea Level Rise
+// var liquefaction = L.layerGroup()
+// Add these layers into the Map
+// L.control.layers(onlySLR, liquefaction).addTo(map);
+//Sylization of the Toggle Menu
+// var toggleLayers = {
+// 	"<span style=' color: gray'>Sea Level Rise Scenarios</span>": onlySLR,
+// 	"Liquefaction Severity Number": liquefaction
+// };
+//Slider code was also modiefied from Iván Sánchez Ortega's sliders demo code:
+// Repo is available from here: https://gitlab.com/IvanSanchez/Leaflet.TileLayer.GL/blob/master/demo/demo-sliders.html
+L.DomEvent.on(document.getElementById('add-slr'), 'change input', function(ev) {
+  antitoner.setUniform('slrValue', ev.target.value);
+  antitoner.reRender();
+});
 </script>
 </body>
 </html>
