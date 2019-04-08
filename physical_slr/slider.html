@@ -14,7 +14,7 @@
 <!-- External JavaScript Packages -->
 <script src="https://mychellew.github.io/mychellew-web/Leaflet.TileLayer.GL.js"></script>
 <script src="https://mychellew.github.io/mychellew-web/leaflet-slider.js"></script>
-
+<script src="https://mychellew.github.io/mychellew-web/soils.js"></script>
 <!-- External CSS Packages -->
   <link rel="stylesheet" href="https://mychellew.github.io/mychellew-web/leaflet-slider.css"/>
 
@@ -102,6 +102,7 @@ function soilStyle(feature) {
     fillOpacity: 0.7
   };
 }
+
 // Classify the data based on their LSN value
  function colorLSN(lSN) {
    return   lSN > 50 ? '#800026' :  // Severe Damage
@@ -112,17 +113,18 @@ function soilStyle(feature) {
                        '#FFFFFF';   // No associated LSN value, produce this color
   };
 //	 load the GeoJSON data from the web
-var soildata =
+var soildata
 $.getJSON ("https://mychellew.github.io/mychellew-web/soils.geojson",
   function (data){
-    soilGeoJSONdata = data;
     // Store the data for later
+    soildata = data;
+    console.log(data)
     L.geoJson(data, {
      style: soilStyle
     }).addTo(map)
   }
 );
-console.log(soildata)
+
 // Determine the factors used to calculate lSN: depth that can be liquefied
 // Depth is in meters
 // var depth = feature.properties.depth + slrValue;
